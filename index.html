@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Light Switch</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='80'>💡</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #121212; color: white; }
         .card { background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 320px; text-align: center; }
@@ -22,13 +24,13 @@
     <p style="color: #4caf50;">● System Online</p>
 
     <div class="control-group">
-        <span class="label">Main Light</span>
+        <span class="label"><i class="fas fa-lightbulb"></i> Main Light</span>
         <div id="statusPin2" class="status">Đang tải...</div>
         <button id="btnPin2" class="btn">Đang đợi...</button>
     </div>
 
     <div class="control-group">
-        <span class="label">Bacolny Light</span>
+        <span class="label"><i class="fas fa-lightbulb"></i> Bacolny Light</span>
         <div id="statusPin3" class="status">Đang tải...</div>
         <button id="btnPin3" class="btn">Đang đợi...</button>
     </div>
