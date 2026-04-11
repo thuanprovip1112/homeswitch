@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enose Control Panel</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #121212; color: white; }
+        .card { background: #1e1e1e; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 320px; text-align: center; }
+        .control-group { margin: 20px 0; padding: 15px; border: 1px solid #333; border-radius: 10px; }
+        .status { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+        .btn { width: 100%; padding: 12px; font-size: 1rem; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .btn-on { background-color: #4caf50; color: white; }
+        .btn-off { background-color: #f44336; color: white; }
+        .label { color: #aaa; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Enose Control</h2>
+    <p style="color: #4caf50;">● System Online</p>
+
+    <div class="control-group">
+        <span class="label">THIẾT BỊ 1 (PIN 2)</span>
+        <div id="statusPin2" class="status">Đang tải...</div>
+        <button id="btnPin2" class="btn">Đang đợi...</button>
+    </div>
+
+    <div class="control-group">
+        <span class="label">THIẾT BỊ 2 (PIN 3)</span>
+        <div id="statusPin3" class="status">Đang tải...</div>
+        <button id="btnPin3" class="btn">Đang đợi...</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    // Cấu hình của bạn
+    const firebaseConfig = {
+        apiKey: "AIzaSyAnUXN6KPgZiRrNs4BGmWA6MRS6uejCuAs",
+        authDomain: "enose-riwqcm.firebaseapp.com",
+        databaseURL: "https://enose-riwqcm-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "enose-riwqcm",
+        storageBucket: "enose-riwqcm.firebasestorage.app",
+        messagingSenderId: "901661079604",
+        appId: "1:901661079604:web:8e3aa428380b9aa7133261"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    // --- XỬ LÝ PIN 2 ---
+    const statusPin2 = document.getElementById('statusPin2');
+    const btnPin2 = document.getElementById('btnPin2');
+    let statePin2 = 0; // Lưu trạng thái hiện tại
+
+    onValue(ref(db, 'control/pin2'), (snapshot) => {
+        statePin2 = snapshot.val();
+        statusPin2.innerText = statePin2 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
+        statusPin2.style.color = statePin2 === 1 ? "#4caf50" : "#f44336";
+        btnPin2.innerText = statePin2 === 1 ? "TẮT PIN 2" : "BẬT PIN 2";
+        btnPin2.className = statePin2 === 1 ? "btn btn-off" : "btn btn-on";
+    });
+
+    btnPin2.onclick = () => {
+        const newState = statePin2 === 1 ? 0 : 1;
+        update(ref(db, 'control'), { pin2: newState });
+    };
+
+    // --- XỬ LÝ PIN 3 ---
+    const statusPin3 = document.getElementById('statusPin3');
+    const btnPin3 = document.getElementById('btnPin3');
+    let statePin3 = 0;
+
+    onValue(ref(db, 'control/pin3'), (snapshot) => {
+        statePin3 = snapshot.val();
+        statusPin3.innerText = statePin3 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
+        statusPin3.style.color = statePin3 === 1 ? "#4caf50" : "#f44336";
+        btnPin3.innerText = statePin3 === 1 ? "TẮT PIN 3" : "BẬT PIN 3";
+        btnPin3.className = statePin3 === 1 ? "btn btn-off" : "btn btn-on";
+    });
+
+    btnPin3.onclick = () => {
+        const newState = statePin3 === 1 ? 0 : 1;
+        update(ref(db, 'control'), { pin3: newState });
+    };
+</script>
+
+</body>
+</html>
