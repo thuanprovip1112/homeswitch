@@ -21,7 +21,7 @@
 
 <div class="card">
     <h2>Home Light Switch</h2>
-    <p style="color: #4caf50;">● System Online</p>
+    <p id="systemStatus" style="color: #4caf50;">● Đang kiểm tra...</p>
 
     <div class="control-group">
         <span class="label"><i class="fas fa-lightbulb"></i> Main Light</span>
@@ -53,6 +53,24 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+
+    // --- CHECK STATUS ONLINE/OFFLINE ---
+    const systemStatus = document.getElementById('systemStatus');
+    const TIMEOUT = 60; // 60 giây
+
+    onValue(ref(db, 'control/last_active'), (snapshot) => {
+        const lastActive = snapshot.val();
+        const now = Math.floor(Date.now() / 1000);
+        const timeDiff = now - lastActive;
+        
+        if (timeDiff < TIMEOUT) {
+            systemStatus.innerText = "● System Online";
+            systemStatus.style.color = "#4caf50";
+        } else {
+            systemStatus.innerText = "● System Offline";
+            systemStatus.style.color = "#ff9800";
+        }
+    });
 
     // --- XỬ LÝ PIN 2 ---
     const statusPin2 = document.getElementById('statusPin2');
