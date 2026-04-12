@@ -57,9 +57,16 @@
     // --- CHECK STATUS ONLINE/OFFLINE ---
     const systemStatus = document.getElementById('systemStatus');
     const TIMEOUT = 60; // 60 giây
+    let lastActive = 0;
 
+    // Lắng nghe last_active từ database
     onValue(ref(db, 'control/last_active'), (snapshot) => {
-        const lastActive = snapshot.val();
+        lastActive = snapshot.val();
+        updateSystemStatus();
+    });
+
+    // Function check online/offline
+    function updateSystemStatus() {
         const now = Math.floor(Date.now() / 1000);
         const timeDiff = now - lastActive;
         
@@ -70,7 +77,10 @@
             systemStatus.innerText = "● System Offline";
             systemStatus.style.color = "#ff9800";
         }
-    });
+    }
+
+    // Poll mỗi 5 giây để check status
+    setInterval(updateSystemStatus, 5000);
 
     // --- XỬ LÝ PIN 2 ---
     const statusPin2 = document.getElementById('statusPin2');
