@@ -34,6 +34,12 @@
         <div id="statusPin3" class="status">Đang tải...</div>
         <button id="btnPin3" class="btn">Đang đợi...</button>
     </div>
+
+    <div class="control-group">
+        <span class="label"><i class="fas fa-water"></i> Bơm Nước (PIN 10)</span>
+        <div id="statusPin10" class="status">Đang tải...</div>
+        <button id="btnPin10" class="btn">Đang đợi...</button>
+    </div>
 </div>
 
 <script type="module">
@@ -116,6 +122,24 @@
     btnPin3.onclick = () => {
         const newState = statePin3 === 1 ? 0 : 1;
         update(ref(db, 'control'), { pin3: newState });
+    };
+
+    // --- XỬ LÝ PIN 10 ---
+    const statusPin10 = document.getElementById('statusPin10');
+    const btnPin10 = document.getElementById('btnPin10');
+    let statePin10 = 0;
+
+    onValue(ref(db, 'control/pin10'), (snapshot) => {
+        statePin10 = snapshot.val();
+        statusPin10.innerText = statePin10 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
+        statusPin10.style.color = statePin10 === 1 ? "#4caf50" : "#f44336";
+        btnPin10.innerText = statePin10 === 1 ? "TẮT BƠM" : "BẬT BƠM";
+        btnPin10.className = statePin10 === 1 ? "btn btn-off" : "btn btn-on";
+    });
+
+    btnPin10.onclick = () => {
+        const newState = statePin10 === 1 ? 0 : 1;
+        update(ref(db, 'control'), { pin10: newState });
     };
 </script>
 
