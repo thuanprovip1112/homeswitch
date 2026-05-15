@@ -15,6 +15,14 @@
         .btn-on { background-color: #4caf50; color: white; }
         .btn-off { background-color: #f44336; color: white; }
         .label { color: #aaa; font-size: 0.9rem; margin-bottom: 5px; display: block; }
+        .schedule-group { margin-top: 20px; padding: 15px; border: 1px solid #444; border-radius: 10px; background: #252525; }
+        .schedule-title { color: #4caf50; font-weight: bold; margin-bottom: 10px; }
+        .time-input { width: 100%; padding: 8px; margin: 8px 0; border: 1px solid #333; border-radius: 5px; background: #1a1a1a; color: white; font-size: 0.9rem; }
+        .btn-schedule { width: 100%; padding: 10px; margin: 8px 0; font-size: 0.9rem; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; background-color: #2196F3; color: white; }
+        .btn-schedule:hover { background-color: #1976D2; }
+        .schedule-list { margin-top: 10px; text-align: left; font-size: 0.85rem; }
+        .schedule-item { padding: 8px; margin: 5px 0; background: #1a1a1a; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .delete-btn { background: #f44336; padding: 4px 8px; border: none; border-radius: 3px; color: white; cursor: pointer; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -39,6 +47,22 @@
         <span class="label"><i class="fas fa-water"></i> Bơm Nước (PIN 10)</span>
         <div id="statusPin10" class="status">Đang tải...</div>
         <button id="btnPin10" class="btn">Đang đợi...</button>
+    </div>
+
+    <div class="schedule-group">
+        <div class="schedule-title"><i class="fas fa-clock"></i> Hẹn Giờ Bật/Tắt</div>
+        <select id="scheduleDevice" class="time-input">
+            <option value="pin2">Main Light</option>
+            <option value="pin3">Bacolny Light</option>
+            <option value="pin10">Bơm Nước</option>
+        </select>
+        <input type="time" id="scheduleTime" class="time-input" placeholder="Nhập giờ hẹn">
+        <select id="scheduleAction" class="time-input">
+            <option value="on">Bật</option>
+            <option value="off">Tắt</option>
+        </select>
+        <button id="btnAddSchedule" class="btn-schedule">Thêm Hẹn Giờ</button>
+        <div id="scheduleList" class="schedule-list"></div>
     </div>
 </div>
 
@@ -141,6 +165,73 @@
         const newState = statePin10 === 1 ? 0 : 1;
         update(ref(db, 'control'), { pin10: newState });
     };
+
+    // --- HẸN GIỜ BẬT/TẮT ---
+    let schedules = JSON.parse(localStorage.getItem('deviceSchedules')) || [];
+    const scheduleDeviceSelect = document.getElementById('scheduleDevice');
+    const scheduleTimeInput = document.getElementById('scheduleTime');
+    const scheduleActionSelect = document.getElementById('scheduleAction');
+    const btnAddSchedule = document.getElementById('btnAddSchedule');
+    const scheduleList = document.getElementById('scheduleList');
+
+    const deviceNames = {
+        'pin2': 'Main Light',
+        'pin3': 'Bacolny Light',
+        'pin10': 'Bơm Nước'
+    };
+
+    function renderSchedules() {
+        scheduleList.innerHTML = '';
+        schedules.forEach((schedule, index) => {
+            const div = document.createElement('div');
+            div.className = 'schedule-item';
+            const actionText = schedule.action === 'on' ? 'Bật' : 'Tắt';
+            div.innerHTML = `
+                <span>${deviceNames[schedule.pin]} - ${schedule.time} (${actionText})</span>
+                <button class="delete-btn" onclick="deleteSchedule(${index})">Xóa</button>
+            `;
+            scheduleList.appendChild(div);
+        });
+    }
+
+    window.deleteSchedule = function(index) {
+        schedules.splice(index, 1);
+        localStorage.setItem('deviceSchedules', JSON.stringify(schedules));
+        renderSchedules();
+    };
+
+    btnAddSchedule.onclick = () => {
+        const device = scheduleDeviceSelect.value;
+        const time = scheduleTimeInput.value;
+        const action = scheduleActionSelect.value;
+        
+        if (!time) {
+            alert('Vui lòng chọn giờ hẹn');
+            return;
+        }
+
+        schedules.push({ pin: device, time, action });
+        localStorage.setItem('deviceSchedules', JSON.stringify(schedules));
+        scheduleTimeInput.value = '';
+        renderSchedules();
+    };
+
+    // Check schedule mỗi phút
+    function checkSchedules() {
+        const now = new Date();
+        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
+                           now.getMinutes().toString().padStart(2, '0');
+        
+        schedules.forEach(schedule => {
+            if (schedule.time === currentTime) {
+                const newState = schedule.action === 'on' ? 1 : 0;
+                update(ref(db, 'control'), { [schedule.pin]: newState });
+            }
+        });
+    }
+
+    setInterval(checkSchedules, 60000); // Check mỗi 60 giây
+    renderSchedules(); // Load schedule khi page load
 </script>
 
 </body>
