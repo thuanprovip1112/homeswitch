@@ -44,9 +44,20 @@
     </div>
 
     <div class="control-group">
-        <span class="label"><i class="fas fa-water"></i> Bơm Nước (PIN 10)</span>
+        <span class="label"><i class="fas fa-water"></i> Bơm Nước</span>
         <div id="statusPin10" class="status">Đang tải...</div>
-        <button id="btnPin10" class="btn">Đang đợi...</button>
+        
+        <div style="margin: 15px 0; padding: 10px; background: #252525; border-radius: 8px;">
+            <button id="btnPin9" class="btn">Bật Bơm</button>
+            <div style="margin-top: 10px; text-align: left;">
+                <label for="speedSlider" style="color: #aaa; font-size: 0.9rem;">Tốc độ PWM (PIN 1):</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                    <input type="range" id="speedSlider" min="0" max="255" value="0" style="flex: 1; cursor: pointer; accent-color: #2196F3;">
+                    <span id="speedValue" style="color: #4caf50; font-weight: bold; min-width: 40px;">0%</span>
+                </div>
+                <small style="color: #888; margin-top: 5px; display: block;">0 = Tắt | 255 = Tối đa</small>
+            </div>
+        </div>
     </div>
 
     <div class="schedule-group">
@@ -54,7 +65,7 @@
         <select id="scheduleDevice" class="time-input">
             <option value="pin2">Main Light</option>
             <option value="pin3">Bacolny Light</option>
-            <option value="pin10">Bơm Nước</option>
+            <option value="pin1">Bơm Nước</option>
         </select>
         <input type="time" id="scheduleTime" class="time-input" placeholder="Nhập giờ hẹn">
         <select id="scheduleAction" class="time-input">
@@ -119,14 +130,14 @@
 
     onValue(ref(db, 'control/pin2'), (snapshot) => {
         statePin2 = snapshot.val();
-        statusPin2.innerText = statePin2 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
-        statusPin2.style.color = statePin2 === 1 ? "#4caf50" : "#f44336";
-        btnPin2.innerText = statePin2 === 1 ? "TẮT PIN 2" : "BẬT PIN 2";
-        btnPin2.className = statePin2 === 1 ? "btn btn-off" : "btn btn-on";
+        statusPin2.innerText = statePin2 === 0 ? "ĐANG BẬT" : "ĐANG TẮT";
+        statusPin2.style.color = statePin2 === 0 ? "#4caf50" : "#f44336";
+        btnPin2.innerText = statePin2 === 0 ? "TẮT PIN 2" : "BẬT PIN 2";
+        btnPin2.className = statePin2 === 0 ? "btn btn-off" : "btn btn-on";
     });
 
     btnPin2.onclick = () => {
-        const newState = statePin2 === 1 ? 0 : 1;
+        const newState = statePin2 === 0 ? 1 : 0;
         update(ref(db, 'control'), { pin2: newState });
     };
 
@@ -137,33 +148,69 @@
 
     onValue(ref(db, 'control/pin3'), (snapshot) => {
         statePin3 = snapshot.val();
-        statusPin3.innerText = statePin3 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
-        statusPin3.style.color = statePin3 === 1 ? "#4caf50" : "#f44336";
-        btnPin3.innerText = statePin3 === 1 ? "TẮT PIN 3" : "BẬT PIN 3";
-        btnPin3.className = statePin3 === 1 ? "btn btn-off" : "btn btn-on";
+        statusPin3.innerText = statePin3 === 0 ? "ĐANG BẬT" : "ĐANG TẮT";
+        statusPin3.style.color = statePin3 === 0 ? "#4caf50" : "#f44336";
+        btnPin3.innerText = statePin3 === 0 ? "TẮT PIN 3" : "BẬT PIN 3";
+        btnPin3.className = statePin3 === 0 ? "btn btn-off" : "btn btn-on";
     });
 
     btnPin3.onclick = () => {
-        const newState = statePin3 === 1 ? 0 : 1;
+        const newState = statePin3 === 0 ? 1 : 0;
         update(ref(db, 'control'), { pin3: newState });
     };
 
-    // --- XỬ LÝ PIN 10 ---
+    // --- XỰ LÝ PIN 9 (ENABLE/DISABLE) VÀ PIN 1 (PWM SPEED) ---
     const statusPin10 = document.getElementById('statusPin10');
-    const btnPin10 = document.getElementById('btnPin10');
-    let statePin10 = 0;
+    const btnPin9 = document.getElementById('btnPin9');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedValue = document.getElementById('speedValue');
+    let statePin9 = 0; // Enable/Disable
+    let statePin1 = 0; // PWM speed
 
-    onValue(ref(db, 'control/pin10'), (snapshot) => {
-        statePin10 = snapshot.val();
-        statusPin10.innerText = statePin10 === 1 ? "ĐANG BẬT" : "ĐANG TẮT";
-        statusPin10.style.color = statePin10 === 1 ? "#4caf50" : "#f44336";
-        btnPin10.innerText = statePin10 === 1 ? "TẮT BƠM" : "BẬT BƠM";
-        btnPin10.className = statePin10 === 1 ? "btn btn-off" : "btn btn-on";
+    // Listen to PIN 9 (Enable/Disable)
+    onValue(ref(db, 'control/pin9'), (snapshot) => {
+        statePin9 = snapshot.val() || 0;
+        updatePumpStatus();
+        btnPin9.innerText = statePin9 === 1 ? "TẮT BƠM" : "BẬT BƠM";
+        btnPin9.className = statePin9 === 1 ? "btn btn-off" : "btn btn-on";
     });
 
-    btnPin10.onclick = () => {
-        const newState = statePin10 === 1 ? 0 : 1;
-        update(ref(db, 'control'), { pin10: newState });
+    // Listen to PIN 1 (PWM speed)
+    onValue(ref(db, 'control/pin1_speed'), (snapshot) => {
+        statePin1 = snapshot.val() || 0;
+        speedSlider.value = statePin1;
+        updateSpeedDisplay();
+        updatePumpStatus();
+    });
+
+    // Update pump status display
+    function updatePumpStatus() {
+        if (statePin9 === 0) {
+            statusPin10.innerText = "ĐANG TẮT";
+            statusPin10.style.color = "#f44336";
+        } else {
+            const percentage = Math.round((statePin1 / 255) * 100);
+            statusPin10.innerText = `ĐANG BẬT (${percentage}%)`;
+            statusPin10.style.color = "#4caf50";
+        }
+    }
+
+    // Update speed display
+    function updateSpeedDisplay() {
+        const percentage = Math.round((statePin1 / 255) * 100);
+        speedValue.innerText = percentage + '%';
+    }
+
+    // Enable/Disable button click
+    btnPin9.onclick = () => {
+        const newState = statePin9 === 1 ? 0 : 1;
+        update(ref(db, 'control'), { pin9: newState });
+    };
+
+    // PWM speed slider change
+    speedSlider.oninput = () => {
+        const pwmValue = parseInt(speedSlider.value);
+        update(ref(db, 'control'), { pin1_speed: pwmValue });
     };
 
     // --- HẸN GIỜ BẬT/TẮT ---
@@ -177,7 +224,7 @@
     const deviceNames = {
         'pin2': 'Main Light',
         'pin3': 'Bacolny Light',
-        'pin10': 'Bơm Nước'
+        'pin1': 'Bơm Nước'
     };
 
     function renderSchedules() {
