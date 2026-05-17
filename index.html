@@ -30,6 +30,9 @@
 <div class="card">
     <h2>Home Light Switch</h2>
     <p id="systemStatus" style="color: #4caf50;">● Đang kiểm tra...</p>
+    <div style="font-size: 1.5rem; font-weight: bold; color: #2196F3; margin-bottom: 15px; padding: 10px; background: #252525; border-radius: 8px;">
+        <i class="fas fa-clock"></i> <span id="realtimeClock">00:00:00</span>
+    </div>
 
     <div class="control-group">
         <span class="label"><i class="fas fa-lightbulb"></i> Main Light</span>
@@ -67,7 +70,11 @@
             <option value="pin3">Bacolny Light</option>
             <option value="pin1">Bơm Nước</option>
         </select>
-        <input type="time" id="scheduleTime" class="time-input" placeholder="Nhập giờ hẹn">
+        <div style="display: flex; gap: 5px; align-items: center;">
+            <input type="time" id="scheduleTime" class="time-input" style="flex: 1;" placeholder="Giờ:Phút">
+            <span style="color: #aaa; font-weight: bold;">:</span>
+            <input type="number" id="scheduleSeconds" class="time-input" placeholder="Giay" min="0" max="59" value="0" style="width: 60px;">
+        </div>
         <select id="scheduleAction" class="time-input">
             <option value="on">Bật</option>
             <option value="off">Tắt</option>
@@ -122,6 +129,18 @@
 
     // Poll mỗi 5 giây để check status
     setInterval(updateSystemStatus, 5000);
+
+    // --- ĐỒNG HỒ REAL TIME ---
+    const realtimeClock = document.getElementById('realtimeClock');
+    function updateClock() {
+        const now = new Date();
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        realtimeClock.innerText = `${hours}:${minutes}:${seconds}`;
+    }
+    updateClock(); // Update ngay lần đầu
+    setInterval(updateClock, 1000); // Update mỗi 1 giây
 
     // --- XỬ LÝ PIN 2 ---
     const statusPin2 = document.getElementById('statusPin2');
@@ -217,6 +236,7 @@
     let schedules = JSON.parse(localStorage.getItem('deviceSchedules')) || [];
     const scheduleDeviceSelect = document.getElementById('scheduleDevice');
     const scheduleTimeInput = document.getElementById('scheduleTime');
+    const scheduleSecondsInput = document.getElementById('scheduleSeconds');
     const scheduleActionSelect = document.getElementById('scheduleAction');
     const btnAddSchedule = document.getElementById('btnAddSchedule');
     const scheduleList = document.getElementById('scheduleList');
@@ -233,8 +253,9 @@
             const div = document.createElement('div');
             div.className = 'schedule-item';
             const actionText = schedule.action === 'on' ? 'Bật' : 'Tắt';
+            const seconds = schedule.seconds !== undefined ? ':' + schedule.seconds.toString().padStart(2, '0') : '';
             div.innerHTML = `
-                <span>${deviceNames[schedule.pin]} - ${schedule.time} (${actionText})</span>
+                <span>${deviceNames[schedule.pin]} - ${schedule.time}${seconds} (${actionText})</span>
                 <button class="delete-btn" onclick="deleteSchedule(${index})">Xóa</button>
             `;
             scheduleList.appendChild(div);
@@ -250,6 +271,7 @@
     btnAddSchedule.onclick = () => {
         const device = scheduleDeviceSelect.value;
         const time = scheduleTimeInput.value;
+        const seconds = parseInt(scheduleSecondsInput.value) || 0;
         const action = scheduleActionSelect.value;
         
         if (!time) {
@@ -257,27 +279,29 @@
             return;
         }
 
-        schedules.push({ pin: device, time, action });
+        schedules.push({ pin: device, time, seconds, action });
         localStorage.setItem('deviceSchedules', JSON.stringify(schedules));
         scheduleTimeInput.value = '';
+        scheduleSecondsInput.value = '0';
         renderSchedules();
     };
 
-    // Check schedule mỗi phút
+    // Check schedule mỗi giây
     function checkSchedules() {
         const now = new Date();
         const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
                            now.getMinutes().toString().padStart(2, '0');
+        const currentSeconds = now.getSeconds();
         
         schedules.forEach(schedule => {
-            if (schedule.time === currentTime) {
+            if (schedule.time === currentTime && schedule.seconds === currentSeconds) {
                 const newState = schedule.action === 'on' ? 1 : 0;
                 update(ref(db, 'control'), { [schedule.pin]: newState });
             }
         });
     }
 
-    setInterval(checkSchedules, 5000); // Check mỗi 5 giây
+    setInterval(checkSchedules, 1000); // Check mỗi 1 giây
     renderSchedules(); // Load schedule khi page load
 </script>
 
