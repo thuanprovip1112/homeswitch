@@ -68,7 +68,7 @@
         <select id="scheduleDevice" class="time-input">
             <option value="pin2">Main Light</option>
             <option value="pin3">Bacolny Light</option>
-            <option value="pin1">Bơm Nước</option>
+            <option value="pin9">Bơm Nước</option>
         </select>
         <div style="display: flex; gap: 5px; align-items: center;">
             <input type="time" id="scheduleTime" class="time-input" style="flex: 1;" placeholder="Giờ:Phút">
@@ -295,7 +295,14 @@
         
         schedules.forEach(schedule => {
             if (schedule.time === currentTime && schedule.seconds === currentSeconds) {
-                const newState = schedule.action === 'on' ? 1 : 0;
+                let newState;
+                if (schedule.pin === 'pin2' || schedule.pin === 'pin3') {
+                    // Đèn dùng logic ngược: 0=BẬT, 1=TẮT
+                    newState = schedule.action === 'on' ? 0 : 1;
+                } else {
+                    // Bơm (pin9): 1=BẬT, 0=TẮT
+                    newState = schedule.action === 'on' ? 1 : 0;
+                }
                 update(ref(db, 'control'), { [schedule.pin]: newState });
             }
         });
