@@ -119,7 +119,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, update, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    import { getDatabase, ref, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
     // Cấu hình của bạn
     const firebaseConfig = {
@@ -266,7 +266,7 @@
     };
 
     // --- HẸN GIỜ BẬT/TẮT ---
-    let schedules = JSON.parse(localStorage.getItem('deviceSchedules')) || [];
+    let schedules = {}; // Đồng bộ real-time từ Firebase
     const scheduleDeviceSelect = document.getElementById('scheduleDevice');
     const scheduleTimeInput = document.getElementById('scheduleTime');
     const scheduleSecondsInput = document.getElementById('scheduleSeconds');
@@ -282,23 +282,32 @@
 
     function renderSchedules() {
         scheduleList.innerHTML = '';
-        schedules.forEach((schedule, index) => {
+        const entries = Object.entries(schedules);
+        if (entries.length === 0) {
+            scheduleList.innerHTML = '<div style="color:#666; text-align:center; padding:8px;">Chưa có hẹn giờ nào</div>';
+            return;
+        }
+        entries.forEach(([key, schedule]) => {
             const div = document.createElement('div');
             div.className = 'schedule-item';
             const actionText = schedule.action === 'on' ? 'Bật' : 'Tắt';
-            const seconds = schedule.seconds !== undefined ? ':' + schedule.seconds.toString().padStart(2, '0') : '';
+            const secs = schedule.seconds !== undefined ? ':' + schedule.seconds.toString().padStart(2, '0') : '';
             div.innerHTML = `
-                <span>${deviceNames[schedule.pin]} - ${schedule.time}${seconds} (${actionText})</span>
-                <button class="delete-btn" onclick="deleteSchedule(${index})">Xóa</button>
+                <span>${deviceNames[schedule.pin] ?? schedule.pin} — ${schedule.time}${secs} (${actionText})</span>
+                <button class="delete-btn" onclick="deleteSchedule('${key}')">Xóa</button>
             `;
             scheduleList.appendChild(div);
         });
     }
 
-    window.deleteSchedule = function(index) {
-        schedules.splice(index, 1);
-        localStorage.setItem('deviceSchedules', JSON.stringify(schedules));
+    // Lắng nghe schedules từ Firebase — tự đồng bộ mọi thiết bị
+    onValue(ref(db, 'schedules'), (snapshot) => {
+        schedules = snapshot.val() || {};
         renderSchedules();
+    });
+
+    window.deleteSchedule = function(key) {
+        remove(ref(db, 'schedules/' + key));
     };
 
     btnAddSchedule.onclick = () => {
@@ -306,27 +315,25 @@
         const time = scheduleTimeInput.value;
         const seconds = parseInt(scheduleSecondsInput.value) || 0;
         const action = scheduleActionSelect.value;
-        
+
         if (!time) {
             alert('Vui lòng chọn giờ hẹn');
             return;
         }
 
-        schedules.push({ pin: device, time, seconds, action });
-        localStorage.setItem('deviceSchedules', JSON.stringify(schedules));
+        push(ref(db, 'schedules'), { pin: device, time, seconds, action });
         scheduleTimeInput.value = '';
         scheduleSecondsInput.value = '0';
-        renderSchedules();
     };
 
     // Check schedule mỗi giây
     function checkSchedules() {
         const now = new Date();
-        const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
-                           now.getMinutes().toString().padStart(2, '0');
+        const currentTime = now.getHours().toString().padStart(2, '0') + ':' +
+                            now.getMinutes().toString().padStart(2, '0');
         const currentSeconds = now.getSeconds();
-        
-        schedules.forEach(schedule => {
+
+        Object.values(schedules).forEach(schedule => {
             if (schedule.time === currentTime && schedule.seconds === currentSeconds) {
                 let newState;
                 if (schedule.pin === 'pin2' || schedule.pin === 'pin3') {
@@ -342,7 +349,6 @@
     }
 
     setInterval(checkSchedules, 1000); // Check mỗi 1 giây
-    renderSchedules(); // Load schedule khi page load
 </script>
 
 </body>
