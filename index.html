@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; background-color: #121212; color: white; padding: 24px 16px; }
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; margin: 0; background-color: #121212; color: white; padding: 24px 16p[...]
         .card { background: #1e1e1e; padding: 24px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 740px; }
 
         /* Header */
@@ -223,8 +223,8 @@
     onValue(ref(db, 'control/pin9'), (snapshot) => {
         statePin9 = snapshot.val() || 0;
         updatePumpStatus();
-        btnPin9.innerText = statePin9 === 1 ? "TẮT BƠM" : "BẬT BƠM";
-        btnPin9.className = statePin9 === 1 ? "btn btn-off" : "btn btn-on";
+        btnPin9.innerText = statePin9 === 0 ? "TẮT BƠM" : "BẬT BƠM";
+        btnPin9.className = statePin9 === 0 ? "btn btn-off" : "btn btn-on";
     });
 
     // Listen to PIN 1 (PWM speed)
@@ -237,7 +237,7 @@
 
     // Update pump status display
     function updatePumpStatus() {
-        if (statePin9 === 0) {
+        if (statePin9 === 1) {
             statusPin10.innerText = "ĐANG TẮT";
             statusPin10.style.color = "#f44336";
         } else {
@@ -255,7 +255,7 @@
 
     // Enable/Disable button click
     btnPin9.onclick = () => {
-        const newState = statePin9 === 1 ? 0 : 1;
+        const newState = statePin9 === 0 ? 1 : 0;
         update(ref(db, 'control'), { pin9: newState });
     };
 
@@ -340,8 +340,8 @@
                     // Đèn dùng logic ngược: 0=BẬT, 1=TẮT
                     newState = schedule.action === 'on' ? 0 : 1;
                 } else {
-                    // Bơm (pin9): 1=BẬT, 0=TẮT
-                    newState = schedule.action === 'on' ? 1 : 0;
+                    // Bơm (pin9): 0=BẬT, 1=TẮT (đã đảo logic)
+                    newState = schedule.action === 'on' ? 0 : 1;
                 }
                 update(ref(db, 'control'), { [schedule.pin]: newState });
             }
